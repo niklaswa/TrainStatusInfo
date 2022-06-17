@@ -1,11 +1,11 @@
 
 # TrainStatusInfo
 
-This macOS application shows the current train status info when connected to the trains hotspot.
+This macOS application shows the current train status info in the status bar when connected to the trains hotspot.
 
-It uses the "internal" API of the web dashboard of the train dashboard.
+It uses the "internal" API of the web dashboard of the train.
 
-#### Current supported providers:
+#### Currently supported data providers:
 - Deutsche Bahn
 - ÖBB
 
