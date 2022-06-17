@@ -28,6 +28,10 @@ class Öbb: TrainProvider {
         let currentStation: CurrentStation
     }
     
+    override func getPossibleSSIDs() -> [String] {
+        return ["OEBB"]
+    }
+    
     override func fetchData() {
         let timeInterval = NSDate().timeIntervalSince1970
         let url = URL(string: self.url + String(timeInterval))!
@@ -43,24 +47,5 @@ class Öbb: TrainProvider {
             }
         }
         task.resume()
-    }
-    
-    override func isAvailable(completion: @escaping (Bool)->()) {
-        let timeInterval = NSDate().timeIntervalSince1970
-        let url = URL(string: self.url + String(timeInterval))!
-        URLSession.shared.dataTask(with: url) {(data, response, error) in
-            guard let data = data else { return }
-            do {
-                if let json = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any] {
-                    if let data = json["operationalMessagesInfo"] as? [String:Any] {
-                        if (data["speed"] as? String?) != nil {
-                            completion(true)
-                        }
-                    }
-                }
-            } catch {
-                completion(false)
-            }
-        }.resume()
     }
 }

@@ -41,6 +41,11 @@ class DeutscheBahn: TrainProvider {
     struct Status: Decodable {
         let connection: Bool
         let speed: Int
+        let gpsStatus: String
+    }
+    
+    override func getPossibleSSIDs() -> [String] {
+        return ["WIFI@DB", "WIFIonICE"]
     }
     
     override func fetchData() {
@@ -48,7 +53,11 @@ class DeutscheBahn: TrainProvider {
         let taskStatus = URLSession.shared.dataTask(with: urlStatus) {(data, response, error) in
             guard let data = data else { return }
             let status: Status = try! self.decoder.decode(Status.self, from: data)
-            self.speed = status.speed
+            if status.gpsStatus == "INVALID" {
+                self.speed = nil
+            } else {
+                self.speed = status.speed
+            }
         }
         taskStatus.resume()
         
@@ -70,19 +79,5 @@ class DeutscheBahn: TrainProvider {
             }
         }
         taskTrip.resume()
-    }
-    
-    override func isAvailable(completion: @escaping (Bool)->()) {
-        let urlStatus = URL(string: statusUrl)!
-        let task = URLSession.shared.dataTask(with: urlStatus) {(data, response, error) in
-            guard let data = data else { return }
-            do {
-                let status: Status = try self.decoder.decode(Status.self, from: data)
-                completion(status.connection)
-            } catch {
-                completion(false)
-            }
-        }
-        task.resume()
     }
 }

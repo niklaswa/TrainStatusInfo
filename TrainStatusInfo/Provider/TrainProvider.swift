@@ -16,4 +16,5 @@ class TrainProvider {
     
     func fetchData() {}
     func isAvailable(completion: @escaping (Bool)->()) {}
+    func getPossibleSSIDs() -> [String] { return [] }
 }

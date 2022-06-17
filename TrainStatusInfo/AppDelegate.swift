@@ -7,6 +7,7 @@
 
 import Cocoa
 import CoreMotion
+import CoreWLAN
 
 class AppDelegate: NSObject, NSApplicationDelegate {
     private var window: NSWindow!
@@ -57,11 +58,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         if (self.provider == nil) {
             let providers = [Öbb(), DeutscheBahn()]
             
+            let currentSSIDs = self.getCurrentSSIDs()
             providers.forEach { provider in
-                provider.isAvailable() { (available) -> () in
-                    print(String(describing: provider.self) + " available: " + String(available))
-                    if (available) {
+                provider.getPossibleSSIDs().forEach { ssid in
+                    if currentSSIDs.contains(ssid) {
                         self.provider = provider
+                        print("Setting provider to " + String(describing: provider))
                     }
                 }
             }
@@ -71,33 +73,35 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
     
     @objc func updateInfo() {
-        if self.provider?.speed == nil {
-            return
-        }
-        
         var timeLeft = "-:-"
         if (self.provider?.arrivalDate != nil) {
             timeLeft = calculateTimeLeft(arrivalDate: self.provider!.arrivalDate!)
         }
         
-        if (abs(self.displaySpeed - self.provider!.speed!) > 20) {
-            self.displaySpeed = self.provider!.speed!
+        
+        var title = ""
+        
+        if self.provider?.speed != nil {
+            if (abs(self.displaySpeed - self.provider!.speed!) > 20) {
+                self.displaySpeed = self.provider!.speed!
+            }
+            
+            // Interpolate speed
+            if (self.displaySpeed < self.provider!.speed!) {
+                self.displaySpeed += 1
+            }
+            
+            if (self.displaySpeed > self.provider!.speed!) {
+                self.displaySpeed -= 1
+            }
+            
+            if (self.displaySpeed > self.highSpeed) {
+                self.highSpeed = self.displaySpeed
+            }
+            
+            title += String(self.displaySpeed) + " km/h | "
         }
         
-        // Interpolate speed
-        if (self.displaySpeed < self.provider!.speed!) {
-            self.displaySpeed += 1
-        }
-        
-        if (self.displaySpeed > self.provider!.speed!) {
-            self.displaySpeed -= 1
-        }
-        
-        if (self.displaySpeed > self.highSpeed) {
-            self.highSpeed = self.displaySpeed
-        }
-        
-        var title = String(self.displaySpeed) + " km/h | "
         
         if (self.provider?.nextStation != nil) {
             if (self.arrived) {
@@ -107,7 +111,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             }
         }
         
-        if (self.highSpeed == self.displaySpeed) {
+        if (self.highSpeed != 0 && self.highSpeed == self.displaySpeed) {
             title = "🔥 " + title
         }
         
@@ -139,6 +143,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     func stopFetching() {
         self.fetchTimer?.invalidate()
         self.fetchTimer = nil
+    }
+    
+    func getCurrentSSIDs() -> [String] {
+        let client = CWWiFiClient.shared()
+        return client.interfaces()?.compactMap { interface in
+            return interface.ssid()
+        } ?? []
     }
     
     @objc func quit() {
